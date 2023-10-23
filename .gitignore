@@ -34,3 +34,14 @@ videos/
 nle/
 nle_data/
 minihack/
+images/
+__pycache__
+.vscode
+*.egg-info
+wandb
+runs
+generated_images
+generated_npy
+gan_checkpoint
+image_folder
+maze

@@ -200,3 +200,238 @@ In summary, the regret is a measure of the difference between the agent's perfor
 - Use adversarial runner (./envs/runner/adversarial_runner.py)
 - check how agents run train() (agent = ACAgent(algo=algo, storage=storage).to(device))
 - how trains not matter, where did the reward change?
+
+
+
+./dcd-isaac
+├── algos
+│   ├── agent.py
+│   ├── __init__.py
+│   ├── ppo.py
+│   └── storage.py
+├── arguments.py
+├── docs
+│   ├── bibtex
+│   │   ├── accel.bib
+│   │   └── dcd.bib
+│   ├── CODE_OF_CONDUCT.md
+│   ├── CONTRIBUTING.md
+│   └── images
+│       ├── accel_bipedal_demo.gif
+│       ├── bipedal_challenges.png
+│       ├── car_racing_bezier_tracks.png
+│       ├── dcd_overview_darkmode.png
+│       ├── dcd_overview.png
+│       ├── f1_benchmark_tracks.png
+│       └── ood_mazes.png
+├── envs
+│   ├── bipedalwalker
+│   │   ├── adversarial.py
+│   │   ├── __init__.py
+│   │   ├── register.py
+│   │   ├── walker_env.py
+│   │   └── walker_test_envs.py
+│   ├── box2d
+│   │   ├── bezier.py
+│   │   ├── car_racing_adversarial.py
+│   │   ├── car_racing_bezier.py
+│   │   ├── car_racing_f1.py
+│   │   ├── car_racing.py
+│   │   ├── __init__.py
+│   │   ├── racetracks
+│   │   │   ├── formula1.py
+│   │   │   ├── __init__.py
+│   │   │   └── racetrack.py
+│   │   └── rendering.py
+│   ├── __init__.py
+│   ├── multigrid
+│   │   ├── adversarial.py
+│   │   ├── cluttered.py
+│   │   ├── crossing.py
+│   │   ├── fourrooms.py
+│   │   ├── __init__.py
+│   │   ├── manual_control.py
+│   │   ├── maze.py
+│   │   ├── mst_maze.py
+│   │   ├── multigrid.py
+│   │   ├── register.py
+│   │   └── window.py
+│   ├── registration.py
+│   ├── runners
+│   │   ├── adversarial_runner.py
+│   │   └── __init__.py
+│   └── wrappers
+│       ├── car_racing_wrappers.py
+│       ├── __init__.py
+│       ├── multigrid_wrappers.py
+│       ├── obs_wrappers.py
+│       ├── parallel_wrappers.py
+│       ├── time_limit.py
+│       ├── vec_env.py
+│       ├── vec_frame_stack.py
+│       ├── vec_monitor.py
+│       └── vec_normalize.py
+├── eval.py
+├── level_replay
+│   ├── __init__.py
+│   ├── level_sampler.py
+│   └── level_store.py
+├── LICENSE
+├── models
+│   ├── car_racing_models.py
+│   ├── common.py
+│   ├── distributions.py
+│   ├── __init__.py
+│   ├── multigrid_global_critic_models.py
+│   ├── multigrid_models.py
+│   ├── popart.py
+│   └── walker_models.py
+├── notes.md
+├── README.MD
+├── requirements.txt
+├── results
+│   ├── bipedal
+│   │   ├── bipedal8d-accel_20k-updates.csv
+│   │   ├── bipedal8d-dr_20k-updates.csv
+│   │   └── bipedal8d-robust_plr-20k_updates.csv
+│   ├── car_racing_f1
+│   │   ├── f1-dr-5M_steps.csv
+│   │   ├── f1-paired-5M_steps.csv
+│   │   ├── f1-plr-5M_steps.csv
+│   │   ├── f1-repaired-5M_steps.csv
+│   │   └── f1-robust_plr-5M_steps.csv
+│   ├── minigrid_ood
+│   │   ├── mg_25_blocks-dr-250M_steps.csv
+│   │   ├── mg_25_blocks-minimax-250M_steps.csv
+│   │   ├── mg_25_blocks-paired-250M_steps.csv
+│   │   ├── mg_25_blocks-plr-250M_steps.csv
+│   │   ├── mg_25_blocks-repaired-250M_steps.csv
+│   │   ├── mg_25_blocks-robust_plr-250M_steps.csv
+│   │   ├── mg_60_blocks-accel_20k_updates.csv
+│   │   ├── mg_60_blocks_uni-dr_20k_updates.csv
+│   │   └── mg_60_blocks_uni-robust_plr_20k_updates.csv
+│   ├── plot_eval_bars.py
+│   └── plot_f1.py
+├── teachDeepRL
+│   ├── __init__.py
+│   └── teachers
+│       ├── algos
+│       │   ├── alp_gmm.py
+│       │   ├── covar_gmm.py
+│       │   ├── __init__.py
+│       │   ├── oracle_teacher.py
+│       │   ├── random_teacher.py
+│       │   └── riac.py
+│       ├── __init__.py
+│       ├── teacher_controller.py
+│       └── utils
+│           ├── dataset.py
+│           ├── plot_utils.py
+│           └── test_utils.py
+├── train.py
+├── train_scripts
+│   ├── grid_configs
+│   │   ├── bipedal
+│   │   │   ├── bipedal_accel.json
+│   │   │   ├── bipedal_accel_poet.json
+│   │   │   ├── bipedal_alpgmm.json
+│   │   │   ├── bipedal_dr.json
+│   │   │   ├── bipedal_minimax.json
+│   │   │   ├── bipedal_paired.json
+│   │   │   └── bipedal_robust_plr.json
+│   │   ├── car_racing
+│   │   │   ├── cr_dr.json
+│   │   │   ├── cr_paired.json
+│   │   │   ├── cr_plr.json
+│   │   │   ├── cr_repaired.json
+│   │   │   └── cr_robust_plr.json
+│   │   └── minigrid
+│   │       ├── 25_blocks
+│   │       │   ├── mg_25b_dr.json
+│   │       │   ├── mg_25b_minimax.json
+│   │       │   ├── mg_25b_paired.json
+│   │       │   ├── mg_25b_plr.json
+│   │       │   ├── mg_25b_repaired.json
+│   │       │   └── mg_25b_robust_plr.json
+│   │       └── 60_blocks_uniform
+│   │           ├── mg_60b_uni_accel_empty.json
+│   │           ├── mg_60b_uni_dr.json
+│   │           └── mg_60b_uni_robust_plr.json
+│   └── make_cmd.py
+└── util
+    ├── filewriter.py
+    ├── geo_complexity.py
+    ├── __init__.py
+    ├── make_agent.py
+    └── unionfind.py
+
+
+tree ./isaacgym-jackal -I 'image_folder|generated_npy|generated_images|*.jpg|*.png|*.pyc|run-*|*.pth' -L 2
+
+./isaacgym-jackal
+├── assets
+│   ├── amp
+│   ├── factory
+│   ├── glb
+│   ├── licenses
+│   ├── mjcf
+│   ├── trifinger
+│   └── urdf
+├── docs
+│   ├── domain_randomization.md
+│   ├── factory.md
+│   ├── framework.md
+│   ├── images
+│   ├── release_notes.md
+│   ├── reproducibility.md
+│   └── rl_examples.md
+├── gan.py
+├── isaacgymenvs
+│   ├── cfg
+│   ├── gan_checkpoint
+│   ├── gan.py
+│   ├── GAN.py
+│   ├── generate_maze.py
+│   ├── __init__.py
+│   ├── jackal.md
+│   ├── learning
+│   ├── maze
+│   ├── PAIR.py
+│   ├── __pycache__
+│   ├── runs
+│   ├── saved_data.npz
+│   ├── simple_snippet.py
+│   ├── tasks
+│   ├── test_bo.py
+│   ├── test_import.py
+│   ├── test.md
+│   ├── test_plot.py
+│   ├── test.py
+│   ├── train.py
+│   ├── train_two.py
+│   ├── utils
+│   ├── videos
+│   └── wandb
+├── isaacgymenvs.egg-info
+│   ├── dependency_links.txt
+│   ├── not-zip-safe
+│   ├── PKG-INFO
+│   ├── requires.txt
+│   ├── SOURCES.txt
+│   └── top_level.txt
+├── LICENSE.txt
+├── python
+│   └── example
+├── README.md
+├── rl_games
+│   ├── docs
+│   ├── LICENSE
+│   ├── notebooks
+│   ├── poetry.lock
+│   ├── pyproject.toml
+│   ├── README.md
+│   ├── rl_games
+│   ├── runner.py
+│   ├── setup.py
+│   └── tests
+└── setup.py
