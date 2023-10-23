@@ -29,6 +29,7 @@ class MultiGridFullyObsWrapper(AdversarialObservationWrapper):
 
     def agent_observation(self, obs):
         env = self.unwrapped
+        print(f"env.grid.encode(): {env.grid.encode()}")
         full_grid = env.grid.encode()
 
         # Note env.agent_pos is an array of length K, for K multigrid agents
@@ -38,7 +39,7 @@ class MultiGridFullyObsWrapper(AdversarialObservationWrapper):
                 COLOR_TO_IDX['red'],
                 env.agent_dir[0]
             ])
-
+        print(f"full_grid: {full_grid}")
         obs['full_obs'] = full_grid
 
         return obs
