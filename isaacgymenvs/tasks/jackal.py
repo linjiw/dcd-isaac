@@ -61,8 +61,10 @@ class Jakcal(VecTask):
         self, cfg, rl_device, sim_device,
         graphics_device_id, headless,
         virtual_screen_capture: bool = False,
-        force_render: bool = False
+        force_render: bool = False, ses = None
     ):
+        self.ses = ses
+        
         self.cfg = cfg
         self.height_samples = None
         self.custom_origins = False
@@ -169,6 +171,9 @@ class Jakcal(VecTask):
         Camera Attachment: Three cameras are attached to the robot for each environment. These cameras move with the robot, offering different perspectives. This could be useful for tasks that rely on visual input, like visual servoing or navigation.
                 
         '''
+        if self.ses:
+            pass ## TODO: add the code for creating the envs
+        
         asset_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../assets')
         asset_file = self.cfg["env"]["urdfAsset"]["file"]
         asset_path = os.path.join(asset_root, asset_file)

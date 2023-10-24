@@ -16,7 +16,7 @@ import gym
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from baselines.logger import HumanOutputFormat
-
+import isaacgymenvs
 display = None
 
 if sys.platform.startswith('linux'):
@@ -74,6 +74,9 @@ if __name__ == '__main__':
     is_training_env = args.ued_algo in ['paired', 'flexible_paired', 'minimax']
     is_paired = args.ued_algo in ['paired', 'flexible_paired']
 
+
+    # agent = isaacgymenvs.make(ses)
+    
     agent = make_agent(name='agent', env=venv, args=args, device=device)
     adversary_agent, adversary_env = None, None
     if is_paired:

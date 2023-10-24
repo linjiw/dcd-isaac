@@ -113,6 +113,9 @@ def launch_rlg_hydra(cfg: DictConfig):
             cfg,
             **kwargs,
         )
+        # get envs action and observation space
+        # action_space = envs.action_space
+        # observation_space = envs.observation_space
         if cfg.capture_video:
             envs.is_vector_env = True
             envs = gym.wrappers.RecordVideo(

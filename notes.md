@@ -200,7 +200,8 @@ In summary, the regret is a measure of the difference between the agent's perfor
 - Use adversarial runner (./envs/runner/adversarial_runner.py)
 - check how agents run train() (agent = ACAgent(algo=algo, storage=storage).to(device))
 - how trains not matter, where did the reward change?
-
+- The DCD Algo/envs/mutilgrid was creating for both adversarial (env generator) and agent. 
+- Where the adversarial recevie full observation space but the agent only recieve partial.
 
 
 ./dcd-isaac
