@@ -119,7 +119,11 @@ class Jakcal(VecTask):
 
         # (num_actors, 2)
         self.dof_state = gymtorch.wrap_tensor(dof_state_tensor)
+        print("dof_state shape:", self.dof_state.shape)
+        print("Expected shape:", (self.num_envs, self.num_dof, 2))
+
         self.dof_pos = self.dof_state.view(self.num_envs, self.num_dof, 2)[..., 0]
+        
         self.dof_vel = self.dof_state.view(self.num_envs, self.num_dof, 2)[..., 1]
 
         # .view(self.num_envs, -1, 3) # shape: num_envs, num_bodies, xyz axis
@@ -464,12 +468,16 @@ class Jakcal(VecTask):
         # w_R = (w*b + 2*v_x) / (2r); w_L = (-w*b + 2*v_x) / (2r)
         # b = 0.37559 (robot width); r = 0.098 (wheel radius)
         # How the actions are translated and applied
+        # print(f"actions.shape {actions.shape}")
+
         self.collided_buf = torch.linalg.norm(self.contact_forces[self.jackal_rigid_body_idx][:, :3], dim=-1) > 0.01
         self.actions = actions.clone().to(self.device) * self.cfg["env"]["control"]["actionScale"]
+        # print(f"actions.shape {actions.shape}")
 
         # Since the angular velocity does not match the actual, we need a multiplier
         # this range varies, we randomize it in a range
         multiplier = np.random.uniform(*self.cfg["env"]["control"]["multiplier"])
+        # print(f"actions.shape {actions.shape}")
         actions[:, 0] = actions[:, 0] * 2; actions[:, 1] = actions[:, 1] * 3.14 * multiplier
         for i in range(self.decimation):  # repeat this action for self.decimation frames
             wR = (2 * actions[:, 0] + actions[:, 1] * 0.37559) / (2 * 0.098)

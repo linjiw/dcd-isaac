@@ -130,8 +130,58 @@ class Runner:
 
     def run(self, args):
         if args['train']:
-            self.run_train(args)
+            if 'second_agent_args' in args:
+                self.run_two_agents_train(args, args['second_agent_args'])
+            else:
+                self.run_train(args)
         elif args['play']:
             self.run_play(args)
         else:
             self.run_train(args)
+
+    def run_two_agents_train(self, args1, args2):
+        print('Started to train two agents')
+
+        # Initialize two agents
+        agent1 = self.algo_factory.create(self.algo_name, base_name='run1', params=args1)
+        agent2 = self.algo_factory.create(self.algo_name, base_name='run2', params=args2)
+
+        # Restore from checkpoints if provided
+        _restore(agent1, args1)
+        _restore(agent2, args2)
+
+        # Override sigma if provided
+        _override_sigma(agent1, args1)
+        _override_sigma(agent2, args2)
+
+        # Synchronized training loop
+        for _ in range(self.algo_params['num_epochs']):
+            agent1.train_step()
+            agent2.train_step()
+
+            # Synchronize (pseudo-code, actual synchronization depends on your setup)
+            self.synchronize_agents(agent1, agent2)
+    def synchronize_agents(self, agent1, agent2):
+        # Placeholder for synchronization logic
+        # Depending on your setup (e.g., if you're using multi-threading or a distributed setup),
+        # you'll need to implement this function to ensure both agents have finished their updates
+        # before proceeding.
+        pass
+
+# class Runner:
+#     # ... other methods ...
+
+#     def run_two_agents_train(self, args1, args2):
+#         print('Started to train two agents')
+
+#         # Modify the configuration for each agent to specify the environment
+#         params1 = deepcopy(self.params)
+#         params1['env_info'] = 'envs1_specific_info'  # Replace with actual info or reference to envs1
+#         params2 = deepcopy(self.params)
+#         params2['env_info'] = 'envs2_specific_info'  # Replace with actual info or reference to envs2
+
+#         # Initialize two agents with their respective environments
+#         agent1 = self.algo_factory.create(self.algo_name, base_name='run1', params=params1)
+#         agent2 = self.algo_factory.create(self.algo_name, base_name='run2', params=params2)
+
+#         # ... rest of the method ...
