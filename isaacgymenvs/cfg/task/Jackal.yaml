@@ -13,8 +13,8 @@ env:
 
   terrain: # BARN environments
     world_path: "urdf/jackal/worlds"
-    staticFriction: 0.5
-    dynamicFriction: 0.5  # it depends on the lower frictions amoung two contacted surfaces
+    staticFriction: 1.0
+    dynamicFriction: 1.0  # it depends on the lower frictions amoung two contacted surfaces
     restitution: 0  # non-elastic
 
   baseInitState:
@@ -30,8 +30,8 @@ env:
     actionScale: 1
     # decimation: Number of control action updates @ sim DT per policy DT
     decimation: 20
-    multiplier: [2.8, 3.2]  # range from which to uniformly sample the multiplier
-
+    # multiplier: [2.8, 3.2]  # range from which to uniformly sample the multiplier
+    multiplier: [1.0, 1.0]  # range from which to uniformly sample the multiplier
   camera:
     width: 240
     height: 1

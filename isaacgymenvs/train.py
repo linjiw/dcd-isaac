@@ -239,43 +239,43 @@ def launch_rlg_hydra(cfg: DictConfig):
             **kwargs,
         )
 
-        # Create the second environment
-        envs2 = isaacgymenvs.make(
-            cfg.seed, 
-            cfg.task_name, 
-            cfg.task.env.numEnvs, 
-            cfg.sim_device,
-            cfg.rl_device,
-            cfg.graphics_device_id,
-            cfg.headless,
-            cfg.multi_gpu,
-            cfg.capture_video,
-            cfg.force_render,
-            cfg,
-            **kwargs,
-        )
+        # # Create the second environment
+        # envs2 = isaacgymenvs.make(
+        #     cfg.seed, 
+        #     cfg.task_name, 
+        #     cfg.task.env.numEnvs, 
+        #     cfg.sim_device,
+        #     cfg.rl_device,
+        #     cfg.graphics_device_id,
+        #     cfg.headless,
+        #     cfg.multi_gpu,
+        #     cfg.capture_video,
+        #     cfg.force_render,
+        #     cfg,
+        #     **kwargs,
+        # )
 
-        # Apply video capture to the first environment if needed
-        if cfg.capture_video:
-            envs1.is_vector_env = True
-            envs1 = gym.wrappers.RecordVideo(
-                envs1,
-                f"videos/{run_name}_env1",
-                step_trigger=lambda step: step % cfg.capture_video_freq == 0,
-                video_length=cfg.capture_video_len,
-            )
+        # # Apply video capture to the first environment if needed
+        # if cfg.capture_video:
+        #     envs1.is_vector_env = True
+        #     envs1 = gym.wrappers.RecordVideo(
+        #         envs1,
+        #         f"videos/{run_name}_env1",
+        #         step_trigger=lambda step: step % cfg.capture_video_freq == 0,
+        #         video_length=cfg.capture_video_len,
+        #     )
 
-        # Apply video capture to the second environment if needed
-        if cfg.capture_video:
-            envs2.is_vector_env = True
-            envs2 = gym.wrappers.RecordVideo(
-                envs2,
-                f"videos/{run_name}_env2",
-                step_trigger=lambda step: step % cfg.capture_video_freq == 0,
-                video_length=cfg.capture_video_len,
-            )
+        # # Apply video capture to the second environment if needed
+        # if cfg.capture_video:
+        #     envs2.is_vector_env = True
+        #     envs2 = gym.wrappers.RecordVideo(
+        #         envs2,
+        #         f"videos/{run_name}_env2",
+        #         step_trigger=lambda step: step % cfg.capture_video_freq == 0,
+        #         video_length=cfg.capture_video_len,
+        #     )
 
-        return envs1, envs2
+        return envs1
     # register the rl-games adapter to use inside the runner
 
     # Register the rl-games adapter to use inside the runner

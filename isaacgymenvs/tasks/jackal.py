@@ -416,6 +416,27 @@ class Jakcal(VecTask):
         return (v + 2 * (q[:, -1:] * uv + uuv)).view(original_shape)
     
     def compute_reward(self):
+
+        # upright_vector = [0, 0, 1]  # Assuming Y-axis is up
+        # self.root_states[self.jackal_actor_idx][:, :3]
+        # current_orientation = get_robot_orientation_as_vector()
+        # # deviation = 1 - np.dot(upright_vector, current_orientation)
+        # reward -= deviation_penalty_factor * deviation
+        # desired_height = 0.0  # Example desired height in meters
+        # current_height = self.root_states[self.jackal_actor_idx][:, 2]
+        # height_threshold = torch.tensor([0.0] * len(current_height), device='cuda:0')  # Convert list to tensor
+        # height_penalty_factor = 1  # The penalty factor for exceeding the height threshold
+
+        # # Get the robot's current height. This will depend on your environment and robot model.
+        
+        # # print(f"current_height: {current_height}")
+
+        # # Calculate height deviation and apply penalty
+        # height_deviation = current_height - height_threshold
+        # self.rew_buf -= height_penalty_factor * height_deviation
+
+
+
         # self.collided_buf = torch.linalg.norm(self.contact_forces[self.jackal_rigid_body_idx][:, :2], dim=-1) > 0.01
         self.timeout_buf_tmp = self.progress_buf >= self.max_episode_length
         self.success_buf = torch.linalg.norm(self.root_states[self.jackal_actor_idx][:, :2] - self.goal[:, :2], dim=-1) < 1
