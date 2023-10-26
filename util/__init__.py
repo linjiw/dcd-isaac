@@ -133,9 +133,11 @@ def set_obs_at_index(obs, obs_, i):
 
 
 def is_discrete_actions(env, adversary=False):
+    # TODO
     if adversary:
         return env.adversary_action_space.__class__.__name__ == 'Discrete'
     else:
+        return False
         return env.action_space.__class__.__name__ == 'Discrete'
 
 

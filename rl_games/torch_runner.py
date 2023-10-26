@@ -33,6 +33,7 @@ def _override_sigma(agent, args):
 class Runner:
 
     def __init__(self, algo_observer=None):
+        print(f"Using Runner from dcd_isaac")
         self.algo_factory = object_factory.ObjectFactory()
         self.algo_factory.register_builder('a2c_continuous', lambda **kwargs : a2c_continuous.A2CAgent(**kwargs))
         self.algo_factory.register_builder('a2c_discrete', lambda **kwargs : a2c_discrete.DiscreteA2CAgent(**kwargs)) 
@@ -55,6 +56,8 @@ class Runner:
         pass
 
     def load_config(self, params):
+        print(f"Using Runner from dcd_isaac")
+
         self.seed = params.get('seed', None)
         if self.seed is None:
             self.seed = int(time.time())

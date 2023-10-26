@@ -30,7 +30,7 @@ from envs.multigrid import *
 from envs.multigrid.adversarial import *
 from envs.box2d import *
 from envs.bipedalwalker import *
-from envs.runners.adversarial_runner import AdversarialRunner 
+from envs.runners.isaac_runner import AdversarialRunner 
 from util import make_agent, FileWriter, safe_checkpoint, create_parallel_env, make_plr_args, save_images
 from eval import Evaluator
 
@@ -39,7 +39,8 @@ if __name__ == '__main__':
     os.environ["OMP_NUM_THREADS"] = "1"
 
     args = parser.parse_args()
-    
+    # set plr args to None
+    args.use_plr = False
     # === Configure logging ==
     if args.xpid is None:
         args.xpid = "lr-%s" % time.strftime("%Y%m%d-%H%M%S")
@@ -74,19 +75,26 @@ if __name__ == '__main__':
     is_training_env = args.ued_algo in ['paired', 'flexible_paired', 'minimax']
     is_paired = args.ued_algo in ['paired', 'flexible_paired']
 
-    # venv = isaacgymenvs.make(
-    #         seed=0, 
-    #         task="Jackal", 
-    #         num_envs=5, 
-    #         sim_device="cuda:0",
-    #         rl_device="cuda:0",
-    #         graphics_device_id=0,
-    #         headless=False
-    #     )
-    # _, ued_venv = create_parallel_env(args)
-    # ageng = normal policy
+    venv = isaacgymenvs.make(
+            seed=0, 
+            task="Jackal", 
+            num_envs=5, 
+            sim_device="cuda:0",
+            rl_device="cuda:0",
+            graphics_device_id=0,
+            headless=False
+        )
+    _, ued_venv = create_parallel_env(args)
 
-    # agent = isaacgymenvs.make(ses)
+    # venv: isaacgymenvs
+    # ued_venv: grid_envs
+    # agent: isaacgymenvs + agent
+    # adversary_agent: isaacgymenvs + agent
+    # adversary_env: grid_envs + agent
+    # self.use_editor = False
+    # self.edit_prob = 0
+    # self.base_levels = None
+
     
     agent = make_agent(name='agent', env=venv, args=args, device=device)
     adversary_agent, adversary_env = None, None
@@ -114,7 +122,7 @@ if __name__ == '__main__':
         train=True,
         plr_args=plr_args,
         device=device)
-
+    # train_runner = Total RL Runner
     # === Configure checkpointing ===
     timer = timeit.default_timer
     initial_update_count = 0
