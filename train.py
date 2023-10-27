@@ -17,14 +17,14 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from baselines.logger import HumanOutputFormat
 import isaacgymenvs
-# display = None
+display = None
 
-# if sys.platform.startswith('linux'):
-#     print('Setting up virtual display')
+if sys.platform.startswith('linux'):
+    print('Setting up virtual display')
 
-#     import pyvirtualdisplay
-#     display = pyvirtualdisplay.Display(visible=0, size=(1400, 900), color_depth=24)
-#     display.start()
+    import pyvirtualdisplay
+    display = pyvirtualdisplay.Display(visible=0, size=(1400, 900), color_depth=24)
+    display.start()
 
 from envs.multigrid import *
 from envs.multigrid.adversarial import *
@@ -69,7 +69,7 @@ if __name__ == '__main__':
         print('Using CUDA\n')
 
     # === Create parallel envs ===
-    # venv, ued_venv = create_parallel_env(args)
+    venv, ued_venv = create_parallel_env(args)
 
     is_training_env = args.ued_algo in ['paired', 'flexible_paired', 'minimax']
     is_paired = args.ued_algo in ['paired', 'flexible_paired']
@@ -248,8 +248,8 @@ if __name__ == '__main__':
     evaluator.close()
     venv.close()
 
-    # if display:
-    #     display.stop()
+    if display:
+        display.stop()
 
 
 # what should venv have?

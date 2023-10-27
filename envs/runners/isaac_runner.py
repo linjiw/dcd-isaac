@@ -382,7 +382,6 @@ class AdversarialRunner(object):
             other = 'agent'
 
         level_sampler = self.level_samplers.get(name) or self.level_samplers.get(other)
-
         updateable = name in self.level_samplers
 
         return level_sampler, updateable
@@ -405,6 +404,7 @@ class AdversarialRunner(object):
         levels = self._get_active_levels()
         self.current_level_seeds = \
             self.level_store.insert(levels, parent_seeds=parent_seeds)
+        # log_plr_buffer_stats = True
         if args.log_plr_buffer_stats or args.reject_unsolvable_seeds:
             passable = self.venv.get_passable()
         else:
