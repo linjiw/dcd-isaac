@@ -450,6 +450,8 @@ class AdversarialEnv(multigrid.MultiGridEnv):
     return np.random.uniform(size=(self.random_z_dim,)).astype(np.float32)
 
   def step_adversary(self, loc):
+    
+    # The isaacgym env should have this to put cylinders
     """The adversary gets n_clutter + 2 moves to place the goal, agent, blocks.
 
     The action space is the number of possible squares in the grid. The squares
