@@ -1439,6 +1439,11 @@ class AdversarialRunner(object):
                 # Handle early termination due to cliffhanger rollout
                 if agent.storage.use_proper_time_limits:
                     for i, done_ in enumerate(done):
+
+
+
+
+                        
                         if not done_:
                             infos[i]['cliffhanger'] = True
                             infos[i]['truncated'] = True

@@ -232,12 +232,14 @@ class Jakcal(VecTask):
         grid_root = os.path.join(asset_root, "../worlds")
         print(f"grid_root: {grid_root}")
         grid_files = [f for f in os.listdir(grid_root) if f.endswith(".npy")]
+        
         grid_files = np.random.permutation(grid_files * self.num_envs)[:self.num_envs]
         self.worlds = ["world_%s" %(f.split("_")[-1].split(".")[0]) for f in grid_files]
         for i in range(self.num_envs):
             env_handle = self.gym.create_env(self.sim, env_lower, env_upper, int(np.sqrt(self.num_envs)))
 
             grid = np.load(os.path.join(grid_root, grid_files[i]))
+            print(f"grid.shape {grid.shape}")
             max_agg_bodies = num_jackal_bodies + np.sum(grid[1:-1, 1:-1]) * num_cylinder_bodies + num_box_bodies * 3
             max_agg_shapes = num_jackal_shapes + np.sum(grid[1:-1, 1:-1]) * num_cylinder_shapes + num_box_shapes * 3
 

@@ -169,47 +169,47 @@ class BasicAgent:
         # print(f"unnormalizeAction: a.shape: {a.shape}")
         return unnormalize(a, self.action_bound_max, self.action_bound_min)
 
-    # def train(self, obs, action, reward, next_obs, done, log_prob):
-    #     # Get old policy outputs
-    #     old_mean, old_log_std, _ = self.policy(obs)
-    #     old_std = old_log_std.exp()
+    def train(self, obs, action, reward, next_obs, done, log_prob):
+        # Get old policy outputs
+        old_mean, old_log_std, _ = self.policy(obs)
+        old_std = old_log_std.exp()
         
-    #     # Get value outputs
-    #     values = self.value(obs)
-    #     next_values = self.value(next_obs)
+        # Get value outputs
+        values = self.value(obs)
+        next_values = self.value(next_obs)
         
-    #     # Calculate the expected value
-    #     reward = reward.view(-1, 1)
-    #     done = done.view(-1, 1)
-    #     values = values.view(-1, 1)
-    #     next_values = next_values.view(-1, 1)
-    #     expected_values = reward + self.gamma * next_values * (1 - done.float())
+        # Calculate the expected value
+        reward = reward.view(-1, 1)
+        done = done.view(-1, 1)
+        values = values.view(-1, 1)
+        next_values = next_values.view(-1, 1)
+        expected_values = reward + self.gamma * next_values * (1 - done.float())
 
-    #     # Get policy outputs
-    #     mean, log_std, _ = self.policy(obs)
-    #     std = log_std.exp()
-    #     normal = torch.distributions.Normal(mean, std)
+        # Get policy outputs
+        mean, log_std, _ = self.policy(obs)
+        std = log_std.exp()
+        normal = torch.distributions.Normal(mean, std)
         
-    #     # Calculate the policy loss using the advantage
-    #     advantage = expected_values - values
-    #     policy_loss = -(log_prob * advantage).mean()
+        # Calculate the policy loss using the advantage
+        advantage = expected_values - values
+        policy_loss = -(log_prob * advantage).mean()
 
-    #     # Backpropagation for policy
-    #     self.policy_optimizer.zero_grad()
-    #     policy_loss.backward(retain_graph=True)  # No need to retain the graph
-    #     torch.nn.utils.clip_grad_norm_(self.policy.parameters(), max_norm=1.0)  # Gradient clipping
-    #     self.policy_optimizer.step()
+        # Backpropagation for policy
+        self.policy_optimizer.zero_grad()
+        policy_loss.backward(retain_graph=True)  # No need to retain the graph
+        torch.nn.utils.clip_grad_norm_(self.policy.parameters(), max_norm=1.0)  # Gradient clipping
+        self.policy_optimizer.step()
 
-    #     # Recalculate the value loss
-    #     value_loss = torch.nn.functional.mse_loss(values, expected_values.detach())
+        # Recalculate the value loss
+        value_loss = torch.nn.functional.mse_loss(values, expected_values.detach())
         
-    #     # Backpropagation for value
-    #     self.value_optimizer.zero_grad()
-    #     value_loss.backward()
-    #     torch.nn.utils.clip_grad_norm_(self.value.parameters(), max_norm=1.0)  # Gradient clipping
-    #     self.value_optimizer.step()
+        # Backpropagation for value
+        self.value_optimizer.zero_grad()
+        value_loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.value.parameters(), max_norm=1.0)  # Gradient clipping
+        self.value_optimizer.step()
 
-    #     return policy_loss.item(), value_loss.item()
+        return policy_loss.item(), value_loss.item()
     def getGaesTargets(self, rewards, values, dones, fails, next_values):
         rewards = rewards.reshape((-1, self.num_envs))
         values = values.reshape((-1, self.num_envs))
@@ -223,48 +223,48 @@ class BasicAgent:
                 gaes[t] = gaes[t] + (1.0 - dones[t]) * self.discount_factor * self.gae_coeff * gaes[t + 1]
         targets = values + gaes
         return gaes.reshape(-1), targets.reshape(-1)
-    def train(self, obs, action, reward, next_obs, done, log_prob):
-        # Convert tensors to numpy arrays for certain calculations
-        rewards_np = reward.detach().cpu().numpy()
-        dones_np = done.detach().cpu().numpy()
+    # def train(self, obs, action, reward, next_obs, done, log_prob):
+    #     # Convert tensors to numpy arrays for certain calculations
+    #     rewards_np = reward.detach().cpu().numpy()
+    #     dones_np = done.detach().cpu().numpy()
 
-        # Normalize actions
-        norm_actions_tensor = self.normalizeAction(action)
+    #     # Normalize actions
+    #     norm_actions_tensor = self.normalizeAction(action)
 
-        # Get GAEs and Targets
-        values_tensor = self.value(obs)
-        next_values_tensor = self.value(next_obs)
-        values_np = values_tensor.detach().cpu().numpy()
-        next_values_np = next_values_tensor.detach().cpu().numpy()
-        gaes, targets = self.getGaesTargets(rewards_np, values_np, dones_np, next_values_np)
-        gaes_tensor = torch.tensor(gaes, device=self.device, dtype=torch.float).view(-1, 1)
-        targets_tensor = torch.tensor(targets, device=self.device, dtype=torch.float).view(-1, 1)
+    #     # Get GAEs and Targets
+    #     values_tensor = self.value(obs)
+    #     next_values_tensor = self.value(next_obs)
+    #     values_np = values_tensor.detach().cpu().numpy()
+    #     next_values_np = next_values_tensor.detach().cpu().numpy()
+    #     gaes, targets = self.getGaesTargets(rewards_np, values_np, dones_np, next_values_np)
+    #     gaes_tensor = torch.tensor(gaes, device=self.device, dtype=torch.float).view(-1, 1)
+    #     targets_tensor = torch.tensor(targets, device=self.device, dtype=torch.float).view(-1, 1)
 
-        # Policy update
-        old_means, old_log_stds, old_stds = self.policy(obs)
-        old_dist = torch.distributions.Normal(old_means, old_stds)
-        old_log_probs = torch.sum(old_dist.log_prob(norm_actions_tensor), dim=1)
+    #     # Policy update
+    #     old_means, old_log_stds, old_stds = self.policy(obs)
+    #     old_dist = torch.distributions.Normal(old_means, old_stds)
+    #     old_log_probs = torch.sum(old_dist.log_prob(norm_actions_tensor), dim=1)
         
-        means, log_stds, stds = self.policy(obs)
-        dist = torch.distributions.Normal(means, stds)
-        log_probs = torch.sum(dist.log_prob(norm_actions_tensor), dim=1)
-        ratios = torch.exp(log_probs - old_log_probs)
-        clipped_ratios = torch.clamp(ratios, 1.0 - self.clip_value, 1.0 + self.clip_value)
-        policy_loss = -(torch.min(gaes_tensor * ratios, gaes_tensor * clipped_ratios)).mean()
+    #     means, log_stds, stds = self.policy(obs)
+    #     dist = torch.distributions.Normal(means, stds)
+    #     log_probs = torch.sum(dist.log_prob(norm_actions_tensor), dim=1)
+    #     ratios = torch.exp(log_probs - old_log_probs)
+    #     clipped_ratios = torch.clamp(ratios, 1.0 - self.clip_value, 1.0 + self.clip_value)
+    #     policy_loss = -(torch.min(gaes_tensor * ratios, gaes_tensor * clipped_ratios)).mean()
         
-        self.policy_optimizer.zero_grad()
-        policy_loss.backward(retain_graph=True)
-        torch.nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
-        self.policy_optimizer.step()
+    #     self.policy_optimizer.zero_grad()
+    #     policy_loss.backward(retain_graph=True)
+    #     torch.nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
+    #     self.policy_optimizer.step()
 
-        # Value update
-        value_loss = (self.value(obs) - targets_tensor).pow(2).mean()
-        self.value_optimizer.zero_grad()
-        value_loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.value.parameters(), self.max_grad_norm)
-        self.value_optimizer.step()
+    #     # Value update
+    #     value_loss = (self.value(obs) - targets_tensor).pow(2).mean()
+    #     self.value_optimizer.zero_grad()
+    #     value_loss.backward()
+    #     torch.nn.utils.clip_grad_norm_(self.value.parameters(), self.max_grad_norm)
+    #     self.value_optimizer.step()
 
-        return policy_loss.item(), value_loss.item()
+    #     return policy_loss.item(), value_loss.item()
 
     def update_from_rollout(self, rollout_data):
         observations = torch.stack(rollout_data['observations'])
