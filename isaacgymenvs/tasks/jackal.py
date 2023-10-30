@@ -61,10 +61,9 @@ class Jakcal(VecTask):
         self, cfg, rl_device, sim_device,
         graphics_device_id, headless,
         virtual_screen_capture: bool = False,
-        force_render: bool = False, ses = None
+        force_render: bool = False
     ):
-        self.ses = ses
-        
+        print("Jackal init")
         self.cfg = cfg
         self.height_samples = None
         self.custom_origins = False
@@ -119,11 +118,7 @@ class Jakcal(VecTask):
 
         # (num_actors, 2)
         self.dof_state = gymtorch.wrap_tensor(dof_state_tensor)
-        print("dof_state shape:", self.dof_state.shape)
-        print("Expected shape:", (self.num_envs, self.num_dof, 2))
-
         self.dof_pos = self.dof_state.view(self.num_envs, self.num_dof, 2)[..., 0]
-        
         self.dof_vel = self.dof_state.view(self.num_envs, self.num_dof, 2)[..., 1]
 
         # .view(self.num_envs, -1, 3) # shape: num_envs, num_bodies, xyz axis
@@ -175,9 +170,6 @@ class Jakcal(VecTask):
         Camera Attachment: Three cameras are attached to the robot for each environment. These cameras move with the robot, offering different perspectives. This could be useful for tasks that rely on visual input, like visual servoing or navigation.
                 
         '''
-        if self.ses:
-            pass ## TODO: add the code for creating the envs
-        
         asset_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../assets')
         asset_file = self.cfg["env"]["urdfAsset"]["file"]
         asset_path = os.path.join(asset_root, asset_file)
@@ -416,27 +408,6 @@ class Jakcal(VecTask):
         return (v + 2 * (q[:, -1:] * uv + uuv)).view(original_shape)
     
     def compute_reward(self):
-
-        # upright_vector = [0, 0, 1]  # Assuming Y-axis is up
-        # self.root_states[self.jackal_actor_idx][:, :3]
-        # current_orientation = get_robot_orientation_as_vector()
-        # # deviation = 1 - np.dot(upright_vector, current_orientation)
-        # reward -= deviation_penalty_factor * deviation
-        # desired_height = 0.0  # Example desired height in meters
-        # current_height = self.root_states[self.jackal_actor_idx][:, 2]
-        # height_threshold = torch.tensor([0.0] * len(current_height), device='cuda:0')  # Convert list to tensor
-        # height_penalty_factor = 1  # The penalty factor for exceeding the height threshold
-
-        # # Get the robot's current height. This will depend on your environment and robot model.
-        
-        # # print(f"current_height: {current_height}")
-
-        # # Calculate height deviation and apply penalty
-        # height_deviation = current_height - height_threshold
-        # self.rew_buf -= height_penalty_factor * height_deviation
-
-
-
         # self.collided_buf = torch.linalg.norm(self.contact_forces[self.jackal_rigid_body_idx][:, :2], dim=-1) > 0.01
         self.timeout_buf_tmp = self.progress_buf >= self.max_episode_length
         self.success_buf = torch.linalg.norm(self.root_states[self.jackal_actor_idx][:, :2] - self.goal[:, :2], dim=-1) < 1
@@ -489,16 +460,12 @@ class Jakcal(VecTask):
         # w_R = (w*b + 2*v_x) / (2r); w_L = (-w*b + 2*v_x) / (2r)
         # b = 0.37559 (robot width); r = 0.098 (wheel radius)
         # How the actions are translated and applied
-        # print(f"actions.shape {actions.shape}")
-
         self.collided_buf = torch.linalg.norm(self.contact_forces[self.jackal_rigid_body_idx][:, :3], dim=-1) > 0.01
         self.actions = actions.clone().to(self.device) * self.cfg["env"]["control"]["actionScale"]
-        # print(f"actions.shape {actions.shape}")
 
         # Since the angular velocity does not match the actual, we need a multiplier
         # this range varies, we randomize it in a range
         multiplier = np.random.uniform(*self.cfg["env"]["control"]["multiplier"])
-        # print(f"actions.shape {actions.shape}")
         actions[:, 0] = actions[:, 0] * 2; actions[:, 1] = actions[:, 1] * 3.14 * multiplier
         for i in range(self.decimation):  # repeat this action for self.decimation frames
             wR = (2 * actions[:, 0] + actions[:, 1] * 0.37559) / (2 * 0.098)

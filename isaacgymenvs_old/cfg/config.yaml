@@ -1,13 +1,11 @@
 
 # Task name - used to pick the class to load
 task_name: ${task.name}
-role: ['protagonist','antagonist']
-
 # experiment name. defaults to name of training config
 experiment: ''
 
 # if set to positive integer, overrides the default number of environments
-num_envs: 1024
+num_envs: 64
 # num_envs: ''
 
 # seed - set to -1 to choose random seed
@@ -44,7 +42,7 @@ checkpoint: ''
 # set to True to use multi-gpu horovod training
 multi_gpu: False
 
-wandb_activate: False
+wandb_activate: True
 wandb_group: ''
 wandb_name: ${train.params.config.name}
 wandb_entity: 'linjiw'
@@ -59,8 +57,8 @@ headless: False
 
 # set default task and default training config based on task
 defaults:
-  - task: RealGrid
-  # - task: Jackal
+  # - task: Ant
+  - task: Jackal
   - train: ${task}PPO
   - hydra/job_logging: disabled
 

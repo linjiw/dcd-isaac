@@ -4,8 +4,7 @@ name: Jackal
 physics_engine: 'physx'
 
 env:
-  # numEnvs: ${resolve_default:4096,${...num_envs}}
-  numEnvs: 40
+  numEnvs: ${resolve_default:4096,${...num_envs}}
   numObservations: 724
   numActions: 2
   envSpacing: 5.  # [m]
@@ -14,8 +13,8 @@ env:
 
   terrain: # BARN environments
     world_path: "urdf/jackal/worlds"
-    staticFriction: 0.5
-    dynamicFriction: 0.5  # it depends on the lower frictions amoung two contacted surfaces
+    staticFriction: 1.0
+    dynamicFriction: 1.0  # it depends on the lower frictions amoung two contacted surfaces
     restitution: 0  # non-elastic
 
   baseInitState:
@@ -43,9 +42,9 @@ env:
 
   learn:
     # episode length in seconds
-    episodeLength_s: 50
+    episodeLength_s: 40
     success_reward: 20.
-    collision_reward: -0.5
+    collision_reward: -0.
     progress_reward: 1.
 
   # viewer cam:
@@ -55,8 +54,8 @@ env:
     lookat: [1., 1, 9]  # [m]
 
 sim:
-  dt: 0.01667
-  substeps: 2
+  dt: 0.005
+  substeps: 1
   up_axis: "z"
   use_gpu_pipeline: ${eq:${...pipeline},"gpu"}
   gravity: [0.0, 0.0, -9.81]
@@ -74,4 +73,3 @@ sim:
     max_gpu_contact_pairs: 8388608 # 8*1024*1024
     num_subscenes: ${....num_subscenes}
     contact_collection: 1 # 0: CC_NEVER (don't collect contact info), 1: CC_LAST_SUBSTEP (collect only contacts on last substep), 2: CC_ALL_SUBSTEPS (default - all contacts)
-    # controlFrequencyInv: 6

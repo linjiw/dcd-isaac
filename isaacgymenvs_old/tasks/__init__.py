@@ -47,7 +47,7 @@ from .shadow_hand import ShadowHand
 from .allegro_hand import AllegroHand
 from .trifinger import Trifinger
 from .jackal import Jakcal, RslRLJackal
-from .realgrid import RealGrid
+from .new_jackal import DummyJackal
 # Mappings from strings to environments
 isaacgym_task_map = {
     "AllegroHand": AllegroHand,
@@ -71,5 +71,5 @@ isaacgym_task_map = {
     "Trifinger": Trifinger,
     "Jackal": Jakcal,
     "RslRLJackal": RslRLJackal,
-    "RealGrid": RealGrid
+    "new_jackal": DummyJackal,
 }

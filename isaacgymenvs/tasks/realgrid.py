@@ -55,7 +55,7 @@ def depth_image_to_point_cloud_GPU(
     return points
 
 
-class Jakcal(VecTask):
+class RealGrid(VecTask):
 
     def __init__(
         self, cfg, rl_device, sim_device,
@@ -63,7 +63,7 @@ class Jakcal(VecTask):
         virtual_screen_capture: bool = False,
         force_render: bool = False
     ):
-        print("Jackal init")
+        print(f"RealGrid init")
         self.cfg = cfg
         self.height_samples = None
         self.custom_origins = False
@@ -87,7 +87,7 @@ class Jakcal(VecTask):
         self.Kp = self.cfg["env"]["control"]["stiffness"]
         self.Kd = self.cfg["env"]["control"]["damping"]
         self.spacing = self.cfg["env"]["envSpacing"]
-
+        self.cylinder_actors = []
         super().__init__(
             cfg, rl_device, sim_device,
             graphics_device_id, headless,
@@ -134,8 +134,127 @@ class Jakcal(VecTask):
         # reward episode sums
         # Check whether we actually need it
 
+
         self.reset_idx(torch.arange(self.num_envs, device=self.device))
         self.init_done = True
+
+# import torch
+
+# import torch
+
+    def move_actor_out_of_simulation(self, actor_handle, env_handle, distant_location=torch.tensor([1000.0, 1000.0, 1000.0], device='cuda')):
+        """
+        Move the specified actor to a distant location, effectively removing it from the simulation area.
+
+        Args:
+        - actor_handle: The handle of the actor to be moved.
+        - env_handle: The handle of the environment in which the actor exists.
+        - distant_location: A torch tensor representing the coordinates to which the actor should be moved. Default is [1000, 1000, 1000].
+        """
+        
+        # Assuming the actor has 3 translational DoFs (x, y, z)
+        # Create a tensor for velocities (all zeros)
+        velocities = torch.zeros_like(distant_location)
+
+        # Stack positions and velocities
+        dof_states_tensor = torch.stack((distant_location, velocities), dim=1)
+
+        # Get the tensor for actor's DoF states
+        dof_states_tensor_handle = self.gym.acquire_dof_state_tensor(self.sim)
+
+        # Map the tensor to a PyTorch tensor
+        dof_states_mapped_tensor = gymtorch.wrap_tensor(dof_states_tensor_handle)
+        print(dof_states_mapped_tensor.shape)
+        # print(dof_states_mapped_tensor[actor_handle, :3].shape)
+        print(distant_location.shape)
+
+
+        # Update the mapped tensor with the new states
+        # dof_states_mapped_tensor[actor_handle, :3] = distant_location
+        dof_states_mapped_tensor[actor_handle, :] = distant_location[:2]
+
+        # dof_states_mapped_tensor[actor_handle, 3:6] = velocities
+
+        # # Release the tensor to reflect the changes in the simulation
+        # self.gym.release_dof_state_tensor(dof_states_tensor_handle)
+
+
+
+
+    def place_obstacle(self, place: torch.Tensor):
+        """
+        Place cylindrical obstacles in the environment based on the given placement matrix.
+
+        Args:
+        - place (torch.Tensor): A 30x30 tensor where 1 indicates an obstacle and 0 indicates free space.
+        """
+        assert place.shape == (30, 30), "The placement matrix should be of shape (30, 30)"
+        assert place.device.type == 'cuda', "The placement tensor should be on the GPU"
+
+        # Load the cylinder asset
+        asset_options = gymapi.AssetOptions()
+        asset_options.fix_base_link = True
+        asset_options.disable_gravity = False
+        asset_options.default_dof_drive_mode = gymapi.DOF_MODE_NONE
+        cylinder_asset = self.gym.create_capsule(self.sim, 0.075, 0.5, asset_options)
+
+        # Place new obstacles based on the placement tensor
+        x_coords, y_coords = torch.where(place == 1)
+        for env_handle in self.envs:  # Loop over all environment handles
+            # Remove existing obstacles from the environment
+            for cylinder in self.cylinder_actors:
+                # self.gym.destroy_actor(env_handle, cylinder)
+                self.move_actor_out_of_simulation(cylinder, env_handle)
+            self.cylinder_actors = []
+
+            for x, y in zip(x_coords, y_coords):
+                xx = x.item() * 0.15
+                yy = y.item() * 0.15
+                pose = gymapi.Transform()
+                pose.p = gymapi.Vec3(xx, yy, 0.5)
+                pose.r = gymapi.Quat.from_axis_angle(gymapi.Vec3(0, 1, 0), math.pi * 0.5)
+                cylinder = self.gym.create_actor(env_handle, cylinder_asset, pose, f"cylinder_{x.item()}_{y.item()}", self.num_envs, 1, 0)
+                self.cylinder_actors.append(cylinder)
+    # def place_obstacle(self, place: torch.Tensor):
+    #     """
+    #     Place cylindrical obstacles in the environment based on the given placement matrix.
+
+    #     Args:
+    #     - place (torch.Tensor): A 30x30 tensor where 1 indicates an obstacle and 0 indicates free space.
+    #     """
+    #     assert place.shape == (30, 30), "The placement matrix should be of shape (30, 30)"
+    #     assert place.device.type == 'cuda', "The placement tensor should be on the GPU"
+
+    #     # Load the cylinder asset
+    #     asset_options = gymapi.AssetOptions()
+    #     asset_options.fix_base_link = True
+    #     asset_options.disable_gravity = False
+    #     asset_options.default_dof_drive_mode = gymapi.DOF_MODE_NONE
+    #     cylinder_asset = self.gym.create_capsule(self.sim, 0.075, 0.5, asset_options)
+
+    #     # Remove existing obstacles from the environment
+    #     # This step is necessary to ensure that we don't overlap obstacles or create redundant obstacles.
+    #     # Assuming you have a list of existing cylinder actors, you can remove them like this:
+    #     for cylinder in self.cylinder_actors:
+    #         self.gym.destroy_actor(self.env_handle, cylinder)
+    #     self.cylinder_actors = []
+
+    #     # Place new obstacles based on the placement tensor
+    #     x_coords, y_coords = torch.where(place == 1)
+    #     for x, y in zip(x_coords, y_coords):
+    #         xx = x.item() * 0.15
+    #         yy = y.item() * 0.15
+    #         pose = gymapi.Transform()
+    #         pose.p = gymapi.Vec3(xx, yy, 0.5)
+    #         pose.r = gymapi.Quat.from_axis_angle(gymapi.Vec3(0, 1, 0), math.pi * 0.5)
+    #         cylinder = self.gym.create_actor(self.env_handle, cylinder_asset, pose, f"cylinder_{x.item()}_{y.item()}", self.num_envs, 1, 0)
+    #         self.cylinder_actors.append(cylinder)
+
+    #     # Update camera info if necessary
+    #     # This step is optional and depends on whether placing obstacles affects the camera views.
+    #     # If you need to adjust the cameras after placing obstacles, you can do so here.
+    #     # For now, I'll assume that the camera info doesn't need to be updated.
+
 
     def create_sim(self):
         self.sim = super().create_sim(self.device_id, self.graphics_device_id, self.physics_engine, self.sim_params)
@@ -143,7 +262,171 @@ class Jakcal(VecTask):
 
         self._create_envs(self.num_envs)
 
+    # def _create_envs(self, num_envs):
+    #     '''
+    #     Here's a breakdown of what each part does:
+
+    #     create_sim: This function initializes the simulation environment. It creates the main simulation, sets up the ground plane (not shown in the provided code), and then creates individual environments (or arenas) with _create_envs.
+
+    #     _create_envs: This function does several things:
+
+    #     Load the main robot asset (Jackal) from a URDF file.
+    #     Set properties for the robot like friction, DOF properties, damping, etc.
+    #     Create other assets for the environment like cylinders and boxes.
+    #     Based on a grid configuration (read from a .npy file), it places cylinders and boxes in the environment.
+    #     Initializes a robot in each environment.
+    #     Attaches cameras to the robot from three different angles.
+    #     Let's dive deeper into a few key segments:
+
+    #     Asset Loading: The code begins by loading the Jackal robot's URDF file and setting its properties. The URDF is a format that describes the robot's physical configuration. The file path is read from a configuration dictionary (self.cfg).
+
+    #     Environment Creation: Multiple environments (or arenas) are created to potentially run many simulations in parallel. The loop over self.num_envs is iterating over each environment.
+
+    #     Grid-based World Creation: For each environment, a grid world is generated. The grid is read from a .npy file. Each cell in the grid determines if a cylinder should be placed there or not.
+
+    #     Actor Creation: Actors (like the robot and obstacles) are added to the environment. Here, the Jackal robot is an actor, the cylinders are actors, and the boxes are actors. The position of each actor is set based on the grid configuration and other properties.
+
+    #     Camera Attachment: Three cameras are attached to the robot for each environment. These cameras move with the robot, offering different perspectives. This could be useful for tasks that rely on visual input, like visual servoing or navigation.
+                
+    #     '''
+    #     asset_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../assets')
+    #     asset_file = self.cfg["env"]["urdfAsset"]["file"]
+    #     asset_path = os.path.join(asset_root, asset_file)
+    #     asset_root = os.path.dirname(asset_path)
+    #     asset_file = os.path.basename(asset_path)
+
+    #     asset_options = gymapi.AssetOptions()
+    #     asset_options.default_dof_drive_mode = gymapi.DOF_MODE_VEL
+    #     asset_options.collapse_fixed_joints = True
+    #     asset_options.replace_cylinder_with_capsule = True
+    #     # asset_options.flip_visual_attachments = True
+    #     # asset_options.density = 0.001
+    #     asset_options.override_inertia = True
+    #     asset_options.angular_damping = 0.0
+    #     asset_options.linear_damping = 0.0
+    #     asset_options.armature = 0.0
+    #     asset_options.thickness = 0.005
+    #     asset_options.disable_gravity = False
+
+    #     jackal_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
+    #     # set wheel friction of Jackal
+    #     rigid_shape_prop = self.gym.get_asset_rigid_shape_properties(jackal_asset)
+    #     for rsp in rigid_shape_prop:
+    #         rsp.friction = 0.5
+
+    #     # set Jackal DOF properties
+    #     dof_props = self.gym.get_asset_dof_properties(jackal_asset)
+    #     dof_props["driveMode"].fill(gymapi.DOF_MODE_VEL)
+    #     dof_props["stiffness"].fill(self.Kp)
+    #     dof_props["damping"].fill(self.Kd)
+
+    #     # setup cylinders for BARN worlds
+    #     asset_options = gymapi.AssetOptions()
+    #     asset_options.fix_base_link = True
+    #     asset_options.disable_gravity = False
+    #     asset_options.default_dof_drive_mode = gymapi.DOF_MODE_NONE
+    #     cylinder_asset = self.gym.create_capsule(self.sim, 0.075, 0.5, asset_options)
+    #     box_asset_side = self.gym.create_box(self.sim, 0.15 * 60, 0.15, 1, asset_options)
+    #     box_asset_back = self.gym.create_box(self.sim, 0.15 * 30, 0.15, 1, asset_options)
+
+    #     self.num_dof = self.gym.get_asset_dof_count(jackal_asset)
+    #     self.num_bodies = self.gym.get_asset_rigid_body_count(jackal_asset)
+
+    #     num_jackal_bodies = self.gym.get_asset_rigid_body_count(jackal_asset)
+    #     num_jackal_shapes = self.gym.get_asset_rigid_shape_count(jackal_asset)
+    #     num_cylinder_bodies = self.gym.get_asset_rigid_body_count(cylinder_asset)
+    #     num_cylinder_shapes = self.gym.get_asset_rigid_shape_count(cylinder_asset)
+    #     num_box_bodies = self.gym.get_asset_rigid_body_count(box_asset_side)
+    #     num_box_shapes = self.gym.get_asset_rigid_shape_count(box_asset_side)
+
+    #     env_lower = gymapi.Vec3(-self.spacing/2, -self.spacing, 0)
+    #     env_upper = gymapi.Vec3(self.spacing/2, self.spacing, self.spacing)
+    #     self.jackal_handles = []
+    #     self.camera_handles_envs = []
+    #     self.envs = []
+    #     cylinder_count_total = 0
+    #     self.jackal_actor_idx = torch.zeros(self.num_envs, device=self.device, dtype=torch.long)
+    #     self.jackal_rigid_body_idx = torch.zeros(self.num_envs, device=self.device, dtype=torch.long)
+
+    #     grid_root = os.path.join(asset_root, "../worlds")
+    #     print(f"grid_root: {grid_root}")
+    #     grid_files = [f for f in os.listdir(grid_root) if f.endswith(".npy")]
+    #     grid_files = np.random.permutation(grid_files * self.num_envs)[:self.num_envs]
+    #     self.worlds = ["world_%s" %(f.split("_")[-1].split(".")[0]) for f in grid_files]
+    #     for i in range(self.num_envs):
+    #         env_handle = self.gym.create_env(self.sim, env_lower, env_upper, int(np.sqrt(self.num_envs)))
+
+    #         grid = np.load(os.path.join(grid_root, grid_files[i]))
+    #         max_agg_bodies = num_jackal_bodies + np.sum(grid[1:-1, 1:-1]) * num_cylinder_bodies + num_box_bodies * 3
+    #         max_agg_shapes = num_jackal_shapes + np.sum(grid[1:-1, 1:-1]) * num_cylinder_shapes + num_box_shapes * 3
+
+    #         self.jackal_actor_idx[i] = cylinder_count_total + i
+    #         self.jackal_rigid_body_idx[i] = cylinder_count_total + i * 5  # the main body is the first rigid body
+    #         pose = gymapi.Transform()
+    #         pose.p = gymapi.Vec3(*self.start_pos)
+    #         pose.r = (
+    #             gymapi.Quat.from_axis_angle(gymapi.Vec3(0, 0, 1), math.pi * self.start_rot / 180)
+    #         )
+
+    #         # aggregate will cause free(): invalid pointer bug
+    #         # self.gym.begin_aggregate(env_handle, max_agg_bodies, max_agg_shapes, True)
+    #         jackal_handle = self.gym.create_actor(env_handle, jackal_asset, pose, "jackal", i, 0, 0)
+    #         self.gym.set_actor_dof_properties(env_handle, jackal_handle, dof_props)
+
+            
+    #         cylinder_count = 3
+            
+    #         for x in range(1, grid.shape[0]-1):  # remove the wall and replace it with box
+    #             for y in range(1, grid.shape[1]-1):
+    #                 if grid[x][y]:
+    #                     cylinder_count += 1
+    #                     xx = x * 0.15; yy = y * 0.15 + 0.15 * 30
+    #                     pose = gymapi.Transform()
+    #                     pose.p = gymapi.Vec3(xx, yy, 0.5)
+    #                     pose.r = gymapi.Quat.from_axis_angle(gymapi.Vec3(0, 1, 0), math.pi * 0.5)
+    #                     cylinder = self.gym.create_actor(env_handle, cylinder_asset, pose, "cylinder_%d" %(cylinder_count), i, 1, 0)
+
+    #         pose = gymapi.Transform()
+    #         pose.p = gymapi.Vec3(0, 0.15 * 30, 0.5)
+    #         pose.r = gymapi.Quat.from_axis_angle(gymapi.Vec3(0, 0, 1), math.pi * 0.5)
+    #         box_side_1 = self.gym.create_actor(env_handle, box_asset_side, pose, "box_side_1", i, 1, 0)
+
+    #         pose = gymapi.Transform()
+    #         pose.p = gymapi.Vec3(0.15 * 29, 0.15 * 30, 0.5)
+    #         pose.r = gymapi.Quat.from_axis_angle(gymapi.Vec3(0, 0, 1), math.pi * 0.5)
+    #         box_side_2 = self.gym.create_actor(env_handle, box_asset_side, pose, "box_side_2", i, 1, 0)
+
+    #         pose = gymapi.Transform()
+    #         pose.p = gymapi.Vec3(0.15 * 14.5, 0, 0.5)
+    #         pose.r = gymapi.Quat.from_axis_angle(gymapi.Vec3(0, 0, 1), math.pi * 0)
+    #         box_back = self.gym.create_actor(env_handle, box_asset_back, pose, "box_back", i, 1, 0)
+            
+    #         # aggregate will cause free(): invalid pointer bug
+    #         # self.gym.end_aggregate(env_handle)
+    #         cylinder_count_total += cylinder_count
+
+    #         self.envs.append(env_handle)
+    #         self.jackal_handles.append(jackal_handle)
+
+    #         camera_handles = []
+    #         for angle in [-90, 0, 90]:
+    #             camera_props = gymapi.CameraProperties()
+    #             camera_props.enable_tensors = True
+    #             camera_props.width = self.cfg["env"]["camera"]["width"]
+    #             camera_props.height = self.cfg["env"]["camera"]["height"]
+    #             camera_props.horizontal_fov = self.cfg["env"]["camera"]["horizontal_fov"]
+    #             camera_handle = self.gym.create_camera_sensor(env_handle, camera_props)
+    #             local_transform = gymapi.Transform()
+    #             local_transform.p = gymapi.Vec3(0.12, 0, 0.3)  # check the location of this camera
+    #             local_transform.r = gymapi.Quat.from_axis_angle(gymapi.Vec3(0,0,1), np.radians(angle))
+    #             self.gym.attach_camera_to_body(camera_handle, env_handle, jackal_handle, local_transform, gymapi.FOLLOW_TRANSFORM)
+    #             camera_handles.append(camera_handle)
+    #         self.camera_handles_envs.append(camera_handles)
+
     def _create_envs(self, num_envs):
+        print(f"Creating {num_envs} environments in RealGrid")
+        # ... [The initial part of the function remains unchanged]
+
         '''
         Here's a breakdown of what each part does:
 
@@ -234,12 +517,19 @@ class Jakcal(VecTask):
         grid_files = [f for f in os.listdir(grid_root) if f.endswith(".npy")]
         grid_files = np.random.permutation(grid_files * self.num_envs)[:self.num_envs]
         self.worlds = ["world_%s" %(f.split("_")[-1].split(".")[0]) for f in grid_files]
+        # self.env_handle_lst = []
         for i in range(self.num_envs):
             env_handle = self.gym.create_env(self.sim, env_lower, env_upper, int(np.sqrt(self.num_envs)))
 
-            grid = np.load(os.path.join(grid_root, grid_files[i]))
-            max_agg_bodies = num_jackal_bodies + np.sum(grid[1:-1, 1:-1]) * num_cylinder_bodies + num_box_bodies * 3
-            max_agg_shapes = num_jackal_shapes + np.sum(grid[1:-1, 1:-1]) * num_cylinder_shapes + num_box_shapes * 3
+            # Create an empty grid for the environment
+            empty_grid = torch.zeros((30, 30), device=self.device)
+            self.place_obstacle(empty_grid)
+            print(f"creating envs------------------")
+
+            # ... [The Jackal actor creation remains unchanged]
+
+            # max_agg_bodies = num_jackal_bodies + np.sum(grid[1:-1, 1:-1]) * num_cylinder_bodies + num_box_bodies * 3
+            # max_agg_shapes = num_jackal_shapes + np.sum(grid[1:-1, 1:-1]) * num_cylinder_shapes + num_box_shapes * 3
 
             self.jackal_actor_idx[i] = cylinder_count_total + i
             self.jackal_rigid_body_idx[i] = cylinder_count_total + i * 5  # the main body is the first rigid body
@@ -254,19 +544,19 @@ class Jakcal(VecTask):
             jackal_handle = self.gym.create_actor(env_handle, jackal_asset, pose, "jackal", i, 0, 0)
             self.gym.set_actor_dof_properties(env_handle, jackal_handle, dof_props)
 
-            
-            cylinder_count = 3
-            
-            for x in range(1, grid.shape[0]-1):  # remove the wall and replace it with box
-                for y in range(1, grid.shape[1]-1):
-                    if grid[x][y]:
-                        cylinder_count += 1
-                        xx = x * 0.15; yy = y * 0.15 + 0.15 * 30
-                        pose = gymapi.Transform()
-                        pose.p = gymapi.Vec3(xx, yy, 0.5)
-                        pose.r = gymapi.Quat.from_axis_angle(gymapi.Vec3(0, 1, 0), math.pi * 0.5)
-                        cylinder = self.gym.create_actor(env_handle, cylinder_asset, pose, "cylinder_%d" %(cylinder_count), i, 1, 0)
+            # Create the top-view camera sensor
+            camera_props = gymapi.CameraProperties()
+            camera_props.enable_tensors = True
+            camera_props.width = self.cfg["env"]["camera"]["width"]
+            camera_props.height = self.cfg["env"]["camera"]["height"]
+            camera_props.horizontal_fov = self.cfg["env"]["camera"]["horizontal_fov"]
+            top_view_camera_handle = self.gym.create_camera_sensor(env_handle, camera_props)
+            top_view_transform = gymapi.Transform()
+            top_view_transform.p = gymapi.Vec3(0, 0, 10)  # Adjust height as needed for a top-down view
+            top_view_transform.r = gymapi.Quat.from_axis_angle(gymapi.Vec3(1, 0, 0), np.radians(-90))
+            self.gym.set_camera_transform(top_view_camera_handle, env_handle, top_view_transform)
 
+            # ... [The rest of the function remains unchanged]
             pose = gymapi.Transform()
             pose.p = gymapi.Vec3(0, 0.15 * 30, 0.5)
             pose.r = gymapi.Quat.from_axis_angle(gymapi.Vec3(0, 0, 1), math.pi * 0.5)
@@ -284,7 +574,7 @@ class Jakcal(VecTask):
             
             # aggregate will cause free(): invalid pointer bug
             # self.gym.end_aggregate(env_handle)
-            cylinder_count_total += cylinder_count
+            # cylinder_count_total += cylinder_count
 
             self.envs.append(env_handle)
             self.jackal_handles.append(jackal_handle)
@@ -489,6 +779,18 @@ class Jakcal(VecTask):
         self.gym.step_graphics(self.sim)
         self.gym.render_all_camera_sensors(self.sim)
         
+    def reset_map(self):
+        # Create an empty 30x30 tensor filled with zeros
+        empty_obstacle_placement = torch.zeros((30, 30), device=self.device)
+        
+        # Place the empty obstacles
+        self.place_obstacle(empty_obstacle_placement)
+        
+        # Reset all environments
+        env_ids = torch.arange(self.num_envs, device=self.device)
+        self.reset_idx(env_ids)
+
+
     def post_physics_step(self):
         self.progress_buf += 1
         self.compute_reward()
@@ -498,29 +800,22 @@ class Jakcal(VecTask):
             self.reset_idx(env_ids)
 
         self.compute_observation()
+# import isaacgym
+# import isaacgymenvs
+# import torch
 
+# num_envs = 2000
 
-class RslRLJackal(Jakcal):
-    def __init__(self, *args, **kw_args):
-        super().__init__(*args, **kw_args)
-
-        # self.num_obs = self.num_observations
-        self.num_privileged_obs = None
-        self.privileged_obs_buf = None
-        self.episode_length_buf = self.progress_buf
-    
-    def get_observations(self):
-        return self.obs_buf
-
-    def get_privileged_observations(self):
-        return self.privileged_obs_buf
-
-    def reset(self, *args, **kw_args):
-        self.episode_length_buf = self.progress_buf
-        obs = super().reset(*args, **kw_args)
-        return obs["obs"], self.privileged_obs_buf
-
-    def step(self, *args, **kw_args):
-        self.episode_length_buf = self.progress_buf
-        obs, rew, done, info = super().step(*args, **kw_args)
-        return obs["obs"], self.privileged_obs_buf, rew, done, info
+# envs = isaacgymenvs.make(
+# 	seed=0, 
+# 	task="RealGrid", 
+# 	num_envs=num_envs, 
+# 	sim_device="cuda:0",
+# 	rl_device="cuda:0",
+# )
+# print("Observation space is", envs.observation_space)
+# print("Action space is", envs.action_space)
+# obs = envs.reset()
+# for _ in range(20):
+# 	random_actions = 2.0 * torch.rand((num_envs,) + envs.action_space.shape, device = 'cuda:0') - 1.0
+# 	envs.step(random_actions)

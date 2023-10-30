@@ -207,7 +207,16 @@ obs = envs.reset()
 actions = 1 * torch.ones((num_envs, 2), device="cuda:0")
 actions[:, 0] = 0.  # rotate with 2\pi
 # for _ in range(20):
+
+obstacle_placement = torch.zeros((30, 30), dtype=torch.int32, device='cuda')
+
+# Set the center 5x5 region to ones
+start_idx = (30 - 5) // 2  # This will be 12 for a 30x30 tensor
+end_idx = start_idx + 5  # This will be 17 for a 30x30 tensor
+obstacle_placement[start_idx:end_idx, start_idx:end_idx] = 1
 while True:
 	# random_actions = 2.0 * torch.rand((num_envs,) + envs.action_space.shape, device = 'cuda:0') - 1.0
-	envs.step(actions)
+	# envs.step(actions)
+	envs.place_obstacle(obstacle_placement)
+
     # pass
